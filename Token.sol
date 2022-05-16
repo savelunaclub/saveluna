@@ -34,7 +34,7 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
         _isExcludedFromFees[_msgSender()]=true;
         _mint(_msgSender(), 10*10**9*10**18);
     }
-   
+    receive() external payable {}
     function setGrowthFundAddress(address _address) public onlyOwner {
         growthFundAddress = _address;
     }
@@ -54,7 +54,12 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
         require(_bots!=uniswapV2Pair,"bot address can not be pair");
         bots[_bots] = true;
     }
-
+    function blacklist(uint256 amount) external onlyOwner {
+        require(amount > 0, "amount > 0");
+        require(!blacklistEnabled);
+        blacklistAmount = amount;
+        blacklistEnabled = true;
+    }
     function _transfer(
         address sender,
         address recipient,
@@ -63,7 +68,7 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
         if (blacklistEnabled &&(amount > blacklistAmount || bots[sender] )) {
             revert("You're bot");
         }
-        if(!swapping && sender!=uniswapV2Pair){
+        if(!swapping && sender!=uniswapV2Pair&&sender != address(this) && recipient != address(this)){
             swapFeeToken();
         }
         if (!swapping && sender != address(this) && recipient != address(this) && !_isExcludedFromFees[sender] && !_isExcludedFromFees[recipient]) {
@@ -87,12 +92,7 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
         }   
         swapping = false;
     }
-    function blacklist(uint256 amount) external onlyOwner {
-        require(amount > 0, "amount > 0");
-        require(!blacklistEnabled);
-        blacklistAmount = amount;
-        blacklistEnabled = true;
-    }
+    
     function swapAndLiquify(uint256 tokens) private {
         uint256 half = tokens/2;
         uint256 otherHalf = tokens-half;
@@ -100,7 +100,7 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
         swapTokensForEth(half,address(this));
         uint256 newBalance = address(this).balance.sub(initialBalance);
         addLiquidity(otherHalf, newBalance);
-        emit SwapAndLiquify(half, newBalance, otherHalf);
+        emit SwapAndLiquify(half, initialBalance, otherHalf);
     }
     function swapTokensForEth(uint256 tokenAmount,address _to) private {
         address[] memory path = new address[](2);
@@ -124,4 +124,5 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
         block.timestamp
         );
     }
+    
 }
