@@ -14,11 +14,6 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
     IUniswapV2Router02 public uniswapV2Router;
     address public uniswapV2Pair;
     mapping (address => bool) private _isExcludedFromFees;
-    mapping (address => bool) bots;
-    bool public blacklistEnabled;
-    uint256 public blacklistDuration = 10 minutes;
-    uint256 public blacklistTime;
-    uint256 public blacklistAmount;
     event ExcludeFromFees(address indexed account, bool isExcluded);
     event SwapAndLiquify(uint256 tokensSwapped, uint256 ethReceived, uint256 tokensIntoLiqudity);
     bool swapping = false;
@@ -49,25 +44,12 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
       function isExcludedFromFees(address account) public view returns(bool) {
         return _isExcludedFromFees[account];
     }
-     function setBlacklists(address _bots) external onlyOwner {
-        require(!bots[_bots]);
-        require(_bots!=uniswapV2Pair,"bot address can not be pair");
-        bots[_bots] = true;
-    }
-    function blacklist(uint256 amount) external onlyOwner {
-        require(amount > 0, "amount > 0");
-        require(!blacklistEnabled);
-        blacklistAmount = amount;
-        blacklistEnabled = true;
-    }
+    
     function _transfer(
         address sender,
         address recipient,
         uint256 amount
     ) internal virtual override {
-        if (blacklistEnabled &&(amount > blacklistAmount || bots[sender] )) {
-            revert("You're bot");
-        }
         if(!swapping && sender!=uniswapV2Pair&&sender != address(this) && recipient != address(this)){
             swapFeeToken();
         }
