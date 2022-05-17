@@ -21,7 +21,7 @@ contract Token is Ownable, ERC20,ReentrancyGuard {
     constructor() ERC20("Save Luna Token", "SLN") {
         growthFundAddress = _msgSender();
         uniswapV2Router = IUniswapV2Router02(
-            0xD99D1c33F9fC3444f8101754aBC46c52416550D1
+            0x10ED43C718714eb63d5aA57B78B54704E256024E
         );
         uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory())
         .createPair(address(this), uniswapV2Router.WETH());
